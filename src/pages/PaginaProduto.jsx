@@ -1,7 +1,12 @@
+import { useState } from 'react'
 import { Link, useParams } from 'react-router'
 
-export default function PaginaProduto({ produtos, onAdicionar }) {
+export default function PaginaProduto({ produtos, onAdicionar, onSolicitarAviso }) {
   const { id } = useParams()
+  const [nomeAviso, setNomeAviso] = useState('')
+  const [emailAviso, setEmailAviso] = useState('')
+  const [mensagemAviso, setMensagemAviso] = useState('')
+
   const produto = produtos.find((item) => item.id === id)
 
   if (!produto) {
@@ -15,9 +20,24 @@ export default function PaginaProduto({ produtos, onAdicionar }) {
     )
   }
 
-  const relacionados = produtos
-    .filter((item) => item.category === produto.category && item.id !== produto.id)
-    .slice(0, 4)
+  const relacionadoDisponivel = (item) => item.id !== produto.id && item.estoque > 0 && Number(item.price) > 0
+  const relacionados = produtos.filter(relacionadoDisponivel).slice(0, 4)
+  const produtoEsgotado = Number(produto.estoque) === 0
+  const precoValido = Number(produto.price) > 0
+
+  function enviarAviso(evento) {
+    evento.preventDefault()
+
+    if (!nomeAviso.trim() || !emailAviso.trim()) {
+      setMensagemAviso('Preencha nome e e-mail para receber o aviso.')
+      return
+    }
+
+    onSolicitarAviso(produto.id, { nome: nomeAviso.trim(), email: emailAviso.trim() })
+    setMensagemAviso('Você foi adicionado à lista de espera.')
+    setNomeAviso('')
+    setEmailAviso('')
+  }
 
   return (
     <section>
@@ -37,17 +57,43 @@ export default function PaginaProduto({ produtos, onAdicionar }) {
           <p className="card-avaliacao">
             ★ {produto.rating.rate} <span>({produto.rating.count} avaliações)</span>
           </p>
-          <p className="detalhe-preco">R$ {produto.price.toFixed(2).replace('.', ',')}</p>
+          <p className="detalhe-preco">
+            {precoValido ? `R$ ${Number(produto.price).toFixed(2).replace('.', ',')}` : 'Preço indisponível'}
+          </p>
           <p className="detalhe-descricao">{produto.description}</p>
-          <p className="detalhe-estoque">{produto.estoque} unidades disponíveis</p>
+          <p className="detalhe-estoque">
+            {produtoEsgotado ? 'Produto esgotado' : `${produto.estoque} unidades disponíveis`}
+          </p>
 
           <button
             className="botao botao-grande"
             onClick={() => onAdicionar(produto)}
-            disabled={produto.estoque === 0}
+            disabled={produtoEsgotado || !precoValido}
           >
-            Adicionar ao carrinho
+            {produtoEsgotado ? 'Esgotado' : precoValido ? 'Adicionar ao carrinho' : 'Indisponível'}
           </button>
+
+          {produtoEsgotado && (
+            <form onSubmit={enviarAviso} className="cupom">
+              <label className="rotulo">Receber aviso quando voltar</label>
+              <input
+                type="text"
+                value={nomeAviso}
+                onChange={(evento) => setNomeAviso(evento.target.value)}
+                placeholder="Seu nome"
+              />
+              <input
+                type="email"
+                value={emailAviso}
+                onChange={(evento) => setEmailAviso(evento.target.value)}
+                placeholder="Seu e-mail"
+              />
+              <button type="submit" className="botao botao-secundario">
+                Quero receber aviso
+              </button>
+              {mensagemAviso && <p className="mensagem-cupom">{mensagemAviso}</p>}
+            </form>
+          )}
 
           <ul className="detalhe-garantias">
             <li>Troca grátis em até 30 dias</li>

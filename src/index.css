@@ -823,6 +823,91 @@ h2 {
   border-bottom: none;
 }
 
+/* Painel do lojista */
+
+.painel-resumo {
+  display: grid;
+  gap: var(--espaco-4);
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  margin-bottom: var(--espaco-6);
+}
+
+.card-metrica {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaco-2);
+  background: var(--cor-superficie);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio);
+  padding: var(--espaco-5);
+}
+
+.metric-label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--cor-texto-suave);
+}
+
+.card-metrica strong {
+  font-size: clamp(1.2rem, 2vw, 1.8rem);
+  letter-spacing: -0.03em;
+}
+
+.painel-grid {
+  display: grid;
+  gap: var(--espaco-5);
+  margin-bottom: var(--espaco-5);
+}
+
+@media (min-width: 960px) {
+  .painel-grid {
+    grid-template-columns: 1.2fr 0.8fr;
+    align-items: start;
+  }
+}
+
+.painel-bloco {
+  background: var(--cor-superficie);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio);
+  padding: var(--espaco-5);
+}
+
+.painel-bloco h2 {
+  margin-top: 0;
+}
+
+.painel-bloco-completo {
+  margin-top: var(--espaco-5);
+}
+
+.lista-simples {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: var(--espaco-3);
+}
+
+.lista-simples li {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaco-1);
+  padding: var(--espaco-3) 0;
+  border-bottom: 1px solid var(--cor-borda);
+}
+
+.lista-simples li:last-child {
+  border-bottom: none;
+}
+
+.lista-simples span {
+  color: var(--cor-texto-suave);
+  font-size: 0.85rem;
+}
+
 /* Rodapé */
 
 .footer {

@@ -7,8 +7,18 @@ import Loja from './pages/Loja'
 import PaginaProduto from './pages/PaginaProduto'
 import Carrinho from './pages/Carrinho'
 import Estoque from './pages/Estoque'
+import PainelLojista from './pages/PainelLojista'
 import { buscarProdutos } from './services/produtos'
 import { buscarClientes } from './services/clientes'
+
+function produtoDisponivel(produto) {
+  const preco = Number(produto?.price)
+  return Number.isFinite(preco) && preco > 0
+}
+
+function produtoEmLoja(produto) {
+  return produto && produto.estoque > 0 && produtoDisponivel(produto)
+}
 
 export default function App() {
   const [produtos, setProdutos] = useState([])
@@ -17,6 +27,7 @@ export default function App() {
   const [carrinho, setCarrinho] = useState([])
   const [clientes, setClientes] = useState([])
   const [clienteAtualId, setClienteAtualId] = useState(null)
+  const [listaEspera, setListaEspera] = useState([])
 
   useEffect(() => {
     buscarProdutos()
@@ -26,19 +37,33 @@ export default function App() {
 
     buscarClientes().then((dados) => {
       setClientes(dados)
-      if (dados.length > 0) setClienteAtualId(dados[0].id)
+
+      if (dados.length === 0) {
+        return
+      }
+
+      const clientePadrao =
+        dados.find((cliente) => Number(cliente?.pedidosAnteriores ?? 0) > 0) ??
+        dados.find((cliente) => Number(cliente?.pedidosAnteriores ?? 0) === 0) ??
+        dados[0]
+
+      setClienteAtualId(clientePadrao.id)
     })
   }, [])
 
   function adicionarAoCarrinho(produto) {
-    setCarrinho(carrinho.concat(produto))
+    if (!produto || !produtoDisponivel(produto) || produto.estoque === 0) {
+      return
+    }
+
+    setCarrinho((anterior) => anterior.concat(produto))
   }
 
   function removerUmaUnidade(produtoId) {
     // Remove só a primeira unidade encontrada do produto
     let removido = false
-    setCarrinho(
-      carrinho.filter((produto) => {
+    setCarrinho((anterior) =>
+      anterior.filter((produto) => {
         if (!removido && produto.id === produtoId) {
           removido = true
           return false
@@ -48,7 +73,22 @@ export default function App() {
     )
   }
 
+  function pedirAvisoProduto(produtoId, dadosCliente) {
+    setListaEspera((anterior) => {
+      const jaExiste = anterior.some(
+        (item) => item.produtoId === produtoId && item.email === dadosCliente.email
+      )
+
+      if (jaExiste) {
+        return anterior
+      }
+
+      return [...anterior, { produtoId, nome: dadosCliente.nome, email: dadosCliente.email }]
+    })
+  }
+
   const clienteAtual = clientes.find((cliente) => cliente.id === clienteAtualId)
+  const produtosVendaveis = produtos.filter((produto) => produtoEmLoja(produto))
 
   return (
     <div className="app">
@@ -63,25 +103,38 @@ export default function App() {
           <Routes>
             <Route
               path="/"
-              element={<Loja produtos={produtos} onAdicionar={adicionarAoCarrinho} />}
+              element={<Loja produtos={produtosVendaveis} onAdicionar={adicionarAoCarrinho} />}
             />
             <Route
               path="/produto/:id"
-              element={<PaginaProduto produtos={produtos} onAdicionar={adicionarAoCarrinho} />}
+              element={
+                <PaginaProduto
+                  produtos={produtos}
+                  onAdicionar={adicionarAoCarrinho}
+                  onSolicitarAviso={pedirAvisoProduto}
+                />
+              }
             />
             <Route
               path="/carrinho"
               element={
                 <Carrinho
                   carrinho={carrinho}
-                  produtos={produtos}
+                  produtos={produtosVendaveis}
                   clienteAtual={clienteAtual}
                   onAdicionar={adicionarAoCarrinho}
                   onRemover={removerUmaUnidade}
                 />
               }
             />
-            <Route path="/estoque" element={<Estoque produtos={produtos} />} />
+            <Route
+              path="/lojista"
+              element={<PainelLojista produtos={produtos} listaEspera={listaEspera} />}
+            />
+            <Route
+              path="/estoque"
+              element={<Estoque produtos={produtos} listaEspera={listaEspera} />}
+            />
           </Routes>
         )}
       </main>
